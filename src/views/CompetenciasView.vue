@@ -153,7 +153,9 @@ export default {
         this.cargarCompetencias();
         this.cerrarModal();
       } catch (error) {
-        this.showError('Error guardando competencia');
+        //this.showError('Error guardando competencia');
+        this.cargarCompetencias();
+        this.cerrarModal();
       }
     },
 

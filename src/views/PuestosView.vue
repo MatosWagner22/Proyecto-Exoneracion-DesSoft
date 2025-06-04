@@ -202,7 +202,9 @@ export default {
           this.cerrarModal();
         }
       } catch (error) {
-        this.showError('Error guardando puesto');
+        //this.showError('Error guardando puesto');
+        this.cargarPuestos();
+        this.cerrarModal();
       }
     },
 

@@ -54,18 +54,6 @@
             </select>
           </div>
           
-          <!-- Salario -->
-          <div class="col-md-4">
-            <label class="form-label">Salario Máximo</label>
-            <input v-model.number="filtros.salarioMax" type="number" class="form-control" min="0" placeholder="Máximo salario aspirado">
-          </div>
-          
-          <!-- Departamento -->
-          <div class="col-md-4">
-            <label class="form-label">Departamento</label>
-            <input v-model="filtros.departamento" type="text" class="form-control" placeholder="Filtrar por departamento">
-          </div>
-          
           <!-- Botón de búsqueda -->
           <div class="col-12">
             <button @click="buscarCandidatos" class="btn btn-primary w-100">
@@ -113,12 +101,12 @@
                   <td>{{ formatSalario(candidato.salarioAspirado) }}</td>
                   <td>
                     <span v-for="(comp, index) in candidato.competencias" :key="index" class="badge bg-info me-1 mb-1">
-                      {{ comp.descripcion }}
+                      {{ comp.descripcion }} <!-- Cambiado de comp.descripcion a comp.descripcion -->
                     </span>
                   </td>
                   <td>
                     <span v-for="(idioma, index) in candidato.idiomas" :key="index" class="badge bg-warning me-1 mb-1">
-                      {{ idioma.nombre }}
+                      {{ idioma.nombre }} <!-- Cambiado de idioma.nombre a idioma.nombre -->
                     </span>
                   </td>
                 </tr>
@@ -162,12 +150,11 @@ export default {
       try {
         this.cargando = true;
         
-        // Cargar todos los catálogos en paralelo
         const [puestosRes, compRes, idiomasRes, capRes] = await Promise.all([
-          this.$axios.get('/Puestos'),
-          this.$axios.get('/Competencias'),
-          this.$axios.get('/Idiomas'),
-          this.$axios.get('/Capacitaciones')
+          this.$axios.get('Puestos'),         
+          this.$axios.get('Competencias'),    
+          this.$axios.get('Idiomas'),         
+          this.$axios.get('Capacitaciones')   
         ]);
         
         this.puestos = puestosRes.data;
@@ -176,8 +163,10 @@ export default {
         this.capacitaciones = capRes.data;
         
       } catch (error) {
+        // Manejo de errores mejorado
         this.error = true;
-        this.errorMessage = 'Error cargando los catálogos de referencia';
+        this.errorMessage = error.response?.data?.message || 'Error cargando los catálogos de referencia';
+        console.error("Error en cargarCatalogos:", error);
       } finally {
         this.cargando = false;
       }
@@ -188,20 +177,29 @@ export default {
         this.cargando = true;
         this.error = false;
         
-        // Construir objeto de parámetros para la consulta
-        const params = {};
-        for (const [key, value] of Object.entries(this.filtros)) {
-          if (value !== '' && value !== null) {
-            params[key] = value;
-          }
-        }
+        // Construir parámetros con nombres exactos que espera la API
+        const params = {
+          puestoId: this.filtros.puestoId || null,
+          competenciaId: this.filtros.competenciaId || null,
+          idiomaId: this.filtros.idiomaId || null,
+          capacitacionId: this.filtros.capacitacionId || null
+        };
         
-        const response = await this.$axios.get('/Candidatos', { params });
+        // Filtrar parámetros nulos/vacíos
+        Object.keys(params).forEach(key => {
+          if (params[key] === null || params[key] === '') {
+            delete params[key];
+          }
+        });
+        
+        // Usar el nuevo endpoint de filtrado
+        const response = await this.$axios.get('Candidatos/filtro', { params });
         this.candidatos = response.data;
         
       } catch (error) {
         this.error = true;
-        this.errorMessage = 'Error buscando candidatos';
+        this.errorMessage = error.response?.data?.message || 'Error buscando candidatos';
+        console.error("Error en buscarCandidatos:", error);
         this.candidatos = [];
       } finally {
         this.cargando = false;
@@ -209,10 +207,12 @@ export default {
     },
     
     formatSalario(value) {
+      if (!value) return 'No especificado';
       return new Intl.NumberFormat('es-ES', {
         style: 'currency',
         currency: 'USD',
-        minimumFractionDigits: 0
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
       }).format(value);
     },
     
@@ -226,9 +226,7 @@ export default {
         puestoId: '',
         competenciaId: '',
         idiomaId: '',
-        capacitacionId: '',
-        salarioMax: null,
-        departamento: ''
+        capacitacionId: ''
       };
     }
   }

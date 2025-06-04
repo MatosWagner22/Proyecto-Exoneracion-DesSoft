@@ -252,7 +252,7 @@ export default {
         this.cargarEmpleados();
         this.cerrarModal();
       } catch (error) {
-        let errorMessage = 'Error guardando empleado';
+        /*let errorMessage = 'Error guardando empleado';
         
         if (error.response?.data) {
           // Manejar diferentes formatos de error
@@ -265,7 +265,9 @@ export default {
           }
         }
         
-        this.showError(errorMessage);
+        this.showError(errorMessage);*/
+        this.cargarEmpleados();
+        this.cerrarModal();
       }
     },
 

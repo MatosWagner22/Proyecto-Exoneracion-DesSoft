@@ -16,8 +16,9 @@
             <th>Puesto</th>
             <th>Salario Aspirado</th>
             <th>Competencias</th>
+            <th>Capacitaciones</th>
             <th>Idiomas</th>
-            <th>Experiencia Laboral</th> <!-- Nueva columna -->
+            <th>Experiencia Laboral</th>
             <th>Acciones</th>
           </tr>
         </thead>
@@ -33,6 +34,18 @@
                 {{ comp }}
                 <span v-if="index === 1 && candidato.competencias.length > 2" class="ms-1">+{{
                   candidato.competencias.length - 2 }}</span>
+              </span>
+            </td>
+            <td>
+              <!-- Cambiado para mostrar capacitaciones -->
+              <span v-for="(cap, index) in candidato.capacitaciones.slice(0, 2)" :key="index"
+                class="badge bg-success me-1 mb-1"> <!-- Cambiado a color verde -->
+                {{ cap }}
+                <span v-if="index === 1 && candidato.capacitaciones.length > 2" class="ms-1">+{{
+                  candidato.capacitaciones.length - 2 }}</span>
+              </span>
+              <span v-if="candidato.capacitaciones.length === 0" class="badge bg-secondary">
+                Sin capacitaciones
               </span>
             </td>
             <td>
@@ -58,6 +71,10 @@
               <div class="btn-group">
                 <button @click="editarCandidato(candidato)" class="btn btn-sm btn-warning">
                   <i class="bi bi-pencil-square"></i>
+                </button>
+                <!-- Botón para convertir a empleado -->
+                <button @click="convertirAEmpleado(candidato)" class="btn btn-sm btn-success">
+                  <i class="bi bi-person-check"></i>
                 </button>
                 <button @click="eliminarCandidato(candidato.id)" class="btn btn-sm btn-danger">
                   <i class="bi bi-trash"></i>
@@ -191,55 +208,6 @@
                     </div>
                   </div>
                 </div>
-
-                <!-- Sección Experiencias Laborales -->
-                <div class="col-12">
-                  <div class="card">
-                    <div class="card-header bg-light">
-                      Experiencias Laborales
-                      <button type="button" @click="agregarExperiencia" class="btn btn-sm btn-success float-end">
-                        <i class="bi bi-plus"></i>
-                      </button>
-                    </div>
-                    <div class="card-body">
-                      <div v-for="(exp, index) in form.experiencias" :key="index" class="border p-3 mb-3">
-                        <div class="row g-3">
-                          <div class="col-md-4">
-                            <label class="form-label">Empresa*</label>
-                            <input v-model="exp.empresa" class="form-control" required>
-                          </div>
-                          <div class="col-md-4">
-                            <label class="form-label">Puesto Ocupado*</label>
-                            <select v-model="exp.puestoOcupado" class="form-select" required>
-                              <option v-for="puesto in puestos" :value="puesto.nombre" :key="puesto.id">
-                                {{ puesto.nombre }}
-                              </option>
-                            </select>
-                          </div>
-                          <div class="col-md-4">
-                            <label class="form-label">Salario (USD)*</label>
-                            <input v-model="exp.salario" type="number" class="form-control" min="0" required>
-                          </div>
-                          <div class="col-md-6">
-                            <label class="form-label">Fecha Desde*</label>
-                            <input v-model="exp.fechaDesde" type="date" class="form-control" required>
-                          </div>
-                          <div class="col-md-6">
-                            <label class="form-label">Fecha Hasta*</label>
-                            <input v-model="exp.fechaHasta" type="date" class="form-control" :min="exp.fechaDesde"
-                              required>
-                          </div>
-                          <div class="col-12 text-end">
-                            <button @click="eliminarExperiencia(index)" class="btn btn-danger btn-sm" type="button">
-                              Eliminar Experiencia
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
               </div>
 
               <div class="modal-footer mt-4">
@@ -281,7 +249,6 @@ export default {
         competencias: [],
         idiomas: [],
         capacitaciones: [],
-        experiencias: []
       }
     }
   },
@@ -344,6 +311,29 @@ export default {
       }
     },
 
+    async convertirAEmpleado(candidato) {
+      if (confirm(`¿Convertir a ${candidato.nombre} en empleado?`)) {
+        try {
+          const response = await this.$axios.post(
+            `/candidatos/${candidato.id}/ConvertirAEmpleado`
+          );
+          
+          this.$toast.success('Candidato convertido a empleado exitosamente');
+          this.candidatos = this.candidatos.filter(c => c.id !== candidato.id);
+          
+          this.$router.push({ 
+            name: 'Empleados',
+            query: { newEmployee: response.data.id }
+          });
+          
+        } catch (error) {
+          let errorMessage = 'Error convirtiendo candidato a empleado';
+          if (error.response?.data) errorMessage += `: ${error.response.data}`;
+          this.showError(errorMessage);
+        }
+      }
+    },
+
     abrirModal() {
       this.mostrarModal = true;
     },
@@ -358,19 +348,9 @@ export default {
         ...candidato,
         puestoId: candidato.puestoId.toString(),
         salarioAspirado: parseFloat(candidato.salarioAspirado).toFixed(2),
-        
-        // Convertir a arrays de descripciones
         competencias: candidato.competencias.map(c => c.descripcion),
         idiomas: candidato.idiomas.map(i => i.nombre),
         capacitaciones: candidato.capacitaciones.map(c => c.descripcion),
-        
-        experiencias: candidato.experiencias.map(exp => ({
-          ...exp,
-          id: exp.id, // Mantener el ID
-          fechaDesde: exp.fechaDesde.split('T')[0],
-          fechaHasta: exp.fechaHasta?.split('T')[0] || '',
-          salario: parseFloat(exp.salario).toFixed(2)
-        }))
       };
       
       this.modoEdicion = true;
@@ -379,8 +359,6 @@ export default {
 
     async guardarCandidato() {
       try {
-        if (!this.validarExperiencias()) return;
-
         // Convertir descripciones a IDs
         const competenciasIds = this.convertirDescriptionsToIds(
           this.form.competencias, 
@@ -400,17 +378,7 @@ export default {
           'descripcion'
         );
 
-        // Preparar experiencias laborales
-        const experiencias = this.form.experiencias.map(exp => ({
-          ...exp,
-          id: exp.id || 0, // Mantener ID si existe, de lo contrario 0
-          candidatoId: this.modoEdicion ? this.form.id : 0,
-          salario: parseFloat(exp.salario),
-          fechaDesde: new Date(exp.fechaDesde).toISOString(),
-          fechaHasta: new Date(exp.fechaHasta).toISOString()
-        }));
-
-        // Construir payload según API
+        // Construir payload sin experiencias
         const payload = {
           id: this.form.id || 0,
           cedula: this.form.cedula,
@@ -422,16 +390,14 @@ export default {
           competenciasIds,
           idiomasIds,
           capacitacionesIds,
-          experiencias
+          experiencias: [] // Enviar array vacío
         };
 
-        // Determinar método HTTP
         const method = this.modoEdicion ? 'put' : 'post';
         const url = this.modoEdicion 
           ? `/candidatos/${this.form.id}` 
           : '/candidatos';
 
-        // Enviar solicitud
         const response = await this.$axios[method](url, payload);
 
         if (response.status === 200 || response.status === 201) {
@@ -446,18 +412,38 @@ export default {
           
         this.showError(`Error al guardar: ${errorMessage}`);
         console.error('Detalles del error:', error.response?.data);
+        this.cargarCandidatos();
+        this.cerrarModal();
       }
     },
 
-    // Nuevo método para convertir descripciones a IDs
     convertirDescriptionsToIds(descriptions, sourceArray, propertyName) {
-      return descriptions
-        .map(desc => sourceArray.find(item => item[propertyName] === desc) // Encontrar objeto
-        .filter(item => item) // Filtrar elementos no encontrados
-        .map(item => item.id)); // Obtener solo IDs
+      const itemMap = new Map();
+      sourceArray.forEach(item => {
+        itemMap.set(item[propertyName], item.id);
+      });
+
+      const ids = [];
+      const notFound = [];
+
+      descriptions.forEach(desc => {
+        const id = itemMap.get(desc);
+        if (id) {
+          ids.push(id);
+        } else if (desc) {
+          notFound.push(desc);
+        }
+      });
+
+      if (notFound.length > 0) {
+        const msg = `Algunos elementos no se encontraron y serán omitidos: ${notFound.join(', ')}`;
+        if (this.$toast) this.$toast.warning(msg);
+        console.warn(msg);
+      }
+
+      return ids;
     },
 
-    // Nuevo método para mostrar éxito
     showSuccess(message) {
       if (this.$toast) {
         this.$toast.success(message);
@@ -484,51 +470,6 @@ export default {
 
     eliminarItem(tipo, index) {
       this.form[tipo].splice(index, 1);
-    },
-
-    agregarExperiencia() {
-      this.form.experiencias.push({
-        id: 0, // <-- Asegurar ID inicial
-        empresa: '',
-        puestoOcupado: '',
-        fechaDesde: '',
-        fechaHasta: '',
-        salario: 0,
-        candidatoId: this.modoEdicion ? this.form.id : 0
-      });
-    },
-
-    eliminarExperiencia(index) {
-      this.form.experiencias.splice(index, 1);
-    },
-
-    validarExperiencias() {
-      let isValid = true;
-      this.form.experiencias.forEach((exp, index) => {
-        if (!exp.empresa || !exp.puestoOcupado) {
-          this.$toast.warning(`Experiencia ${index + 1}: Complete todos los campos obligatorios`);
-          isValid = false;
-        }
-
-        const fechaDesde = new Date(exp.fechaDesde);
-        const fechaHasta = new Date(exp.fechaHasta);
-
-        if (isNaN(fechaDesde.getTime())) {
-          this.$toast.warning(`Experiencia ${index + 1}: Fecha desde inválida`);
-          isValid = false;
-        }
-
-        if (isNaN(fechaHasta.getTime())) {
-          this.$toast.warning(`Experiencia ${index + 1}: Fecha hasta inválida`);
-          isValid = false;
-        }
-
-        if (fechaHasta < fechaDesde) {
-          this.$toast.warning(`Experiencia ${index + 1}: Fecha hasta no puede ser anterior`);
-          isValid = false;
-        }
-      });
-      return isValid;
     },
 
     nivelFormat(nivel) {
@@ -563,7 +504,6 @@ export default {
         competencias: [],
         idiomas: [],
         capacitaciones: [],
-        experiencias: []
       };
       this.modoEdicion = false;
     }
@@ -597,16 +537,19 @@ export default {
   transition: all 0.3s ease;
 }
 
-.experiencia-item {
-  border: 1px solid #dee2e6;
-  border-radius: 5px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-}
-
 .form-control[type="number"]::-webkit-inner-spin-button,
 .form-control[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: auto;
   margin: 0;
+}
+
+.btn-success {
+  background-color: #198754;
+  border-color: #198754;
+}
+
+/* Nuevo color para badges de capacitaciones */
+.bg-success {
+  background-color: #198754 !important;
 }
 </style>

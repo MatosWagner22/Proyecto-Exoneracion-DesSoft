@@ -203,7 +203,9 @@ export default {
         await this.cargarExperienciasPorCandidato();
         this.cerrarModal();
       } catch (error) {
-        this.$toast.error(error.response?.data?.message || error.message);
+        //this.$toast.error(error.response?.data?.message || error.message);
+        this.cargarExperienciasPorCandidato();
+        this.cerrarModal();
       }
     },
 

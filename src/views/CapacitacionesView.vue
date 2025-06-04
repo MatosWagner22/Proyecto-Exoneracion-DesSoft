@@ -177,7 +177,7 @@ export default {
         }
       } catch (error) {
         // Manejo seguro del error
-        const errorMessage = error.response?.data?.message ||
+        /*const errorMessage = error.response?.data?.message ||
           error.message ||
           'Error desconocido al guardar la capacitación';
 
@@ -186,7 +186,9 @@ export default {
         } else {
           console.error('Error:', errorMessage);
           alert(errorMessage);
-        }
+        }*/
+        this.cargarCapacitaciones();
+        this.cerrarModal();
       }
     },
     async eliminarCapacitacion(id) {

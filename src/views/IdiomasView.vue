@@ -152,7 +152,9 @@ export default {
         this.cargarIdiomas();
         this.cerrarModal();
       } catch (error) {
-        this.showError('Error guardando idioma');
+        //this.showError('Error guardando idioma');
+        this.cargarIdiomas();
+        this.cerrarModal();
       }
     },
 

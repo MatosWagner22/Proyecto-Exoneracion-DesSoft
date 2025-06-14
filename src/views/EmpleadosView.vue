@@ -68,10 +68,18 @@
                 <!-- Cédula y Nombre -->
                 <div class="col-md-6">
                   <label class="form-label">Cédula*</label>
-                  <input v-model="form.cedula" 
-                         class="form-control" 
-                         required
-                         maxlength="20">
+                  <input 
+                    v-model="form.cedula" 
+                    @input="formatearCedula"
+                    class="form-control" 
+                    required 
+                    maxlength="13"
+                    placeholder="000-0000000-0"
+                    :class="{ 'is-invalid': cedulaInvalida }"
+                  >
+                  <div v-if="cedulaInvalida" class="invalid-feedback">
+                    {{ mensajeErrorCedula }}
+                  </div>
                 </div>
                 
                 <div class="col-md-6">
@@ -332,6 +340,73 @@ export default {
         fechaIngreso: new Date().toISOString().split('T')[0]
       };
       this.modoEdicion = false;
+    },
+    formatearCedula() {
+      // Eliminar cualquier carácter no numérico
+      let cedula = this.form.cedula.replace(/\D/g, '');
+      
+      // Formatear solo si la longitud es suficiente
+      if (cedula.length > 3 && cedula.length <= 10) {
+        cedula = cedula.substring(0, 3) + '-' + cedula.substring(3);
+      }
+      if (cedula.length > 11) {
+        cedula = cedula.substring(0, 11) + '-' + cedula.substring(11, 12);
+      }
+      
+      this.form.cedula = cedula;
+      this.validarCedula();
+    },
+    
+    validarCedula() {
+      this.cedulaInvalida = false;
+      this.mensajeErrorCedula = '';
+      
+      const cedula = this.form.cedula.replace(/-/g, '');
+      
+      // Validar longitud
+      if (cedula.length !== 11) {
+        this.cedulaInvalida = true;
+        this.mensajeErrorCedula = 'La cédula debe tener 11 dígitos';
+        return false;
+      }
+      
+      // Validar que todos sean números
+      if (!/^\d+$/.test(cedula)) {
+        this.cedulaInvalida = true;
+        this.mensajeErrorCedula = 'La cédula solo puede contener números';
+        return false;
+      }
+      
+      // Validar dígito verificador
+      const digitoVerificador = this.calcularDigitoVerificador(cedula);
+      if (parseInt(cedula[10]) !== digitoVerificador) {
+        this.cedulaInvalida = true;
+        this.mensajeErrorCedula = 'El dígito verificador no es válido';
+        return false;
+      }
+      
+      return true;
+    },
+    
+    calcularDigitoVerificador(cedula) {
+      // Factores de ponderación para cada posición
+      const factores = [1, 2, 1, 2, 1, 2, 1, 2, 1, 2];
+      let suma = 0;
+      
+      for (let i = 0; i < 10; i++) {
+        let producto = parseInt(cedula[i]) * factores[i];
+        
+        // Si el producto es >= 10, sumar los dígitos individuales
+        if (producto >= 10) {
+          producto = Math.floor(producto / 10) + (producto % 10);
+        }
+        
+        suma += producto;
+      }
+      
+      // Calcular dígito verificador
+      const modulo = suma % 10;
+      return modulo === 0 ? 0 : 10 - modulo;
     }
   }
 }

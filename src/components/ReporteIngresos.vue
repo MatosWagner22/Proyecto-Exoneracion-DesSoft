@@ -6,6 +6,9 @@
           <i class="bi bi-people-fill me-2"></i>Nuevos Ingresos de Empleados
           <small class="ms-2">(por rango de fechas)</small>
         </h3>
+        <button v-if="nuevosIngresos.length > 0" @click="exportarPDF" class="btn btn-light w-100">
+          <i class="bi bi-file-earmark-pdf me-1"></i> Exportar PDF
+        </button>
       </div>
       
       <div class="card-body">
@@ -79,6 +82,8 @@
 <script>
 import { Chart, registerables } from 'chart.js';
 Chart.register(...registerables);
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export default {
   name: 'ReporteIngresos',
@@ -216,6 +221,81 @@ export default {
           }
         }
       });
+    },
+    exportarPDF() {
+      // Crear nuevo documento PDF
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      // Título del reporte
+      const title = "Reporte de Nuevos Ingresos";
+      const subtitle = `Del ${this.formatDate(this.fechas.inicio)} al ${this.formatDate(this.fechas.fin)}`;
+      
+      doc.setFontSize(16);
+      doc.text(title, 15, 20);
+      
+      doc.setFontSize(12);
+      doc.setTextColor(100);
+      doc.text(subtitle, 15, 27);
+      
+      // Información de generación
+      const date = new Date().toLocaleDateString();
+      doc.setFontSize(10);
+      doc.text(`Generado: ${date}`, 15, 34);
+      doc.text(`Total de empleados: ${this.nuevosIngresos.length}`, 15, 40);
+
+      // Preparar datos para la tabla
+      const tableData = this.nuevosIngresos.map(empleado => {
+        return [
+          empleado.nombre,
+          empleado.puestoNombre,
+          empleado.departamento,
+          this.formatCurrency(empleado.salarioMensual),
+          this.formatDate(empleado.fechaIngreso)
+        ];
+      });
+
+      // Encabezados de la tabla
+      const headers = [
+        'Nombre',
+        'Puesto',
+        'Departamento',
+        'Salario',
+        'Fecha Ingreso'
+      ];
+
+      // Crear tabla
+      autoTable(doc, {
+        head: [headers],
+        body: tableData,
+        startY: 45,
+        styles: {
+          fontSize: 10,
+          cellPadding: 3
+        },
+        headStyles: {
+          fillColor: [40, 167, 69], // Verde success
+          textColor: 255,
+          fontStyle: 'bold'
+        },
+        alternateRowStyles: {
+          fillColor: [240, 240, 240]
+        },
+        didDrawPage: (data) => {
+          // Pie de página
+          const pageCount = doc.internal.getNumberOfPages();
+          doc.setFontSize(8);
+          doc.text(`Página ${data.pageNumber} de ${pageCount}`, 
+                   data.settings.margin.left, 
+                   doc.internal.pageSize.height - 10);
+        }
+      });
+
+      // Guardar PDF
+      doc.save(`reporte-ingresos-${this.fechas.inicio}-${this.fechas.fin}.pdf`);
     },
     
     formatCurrency(value) {

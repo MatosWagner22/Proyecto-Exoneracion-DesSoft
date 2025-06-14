@@ -5,6 +5,9 @@
         <h4 class="mb-0">
           <i class="bi bi-search me-2"></i>Consulta de Candidatos por Criterios
         </h4>
+        <button v-if="candidatos.length > 0" @click="exportarPDF" class="btn btn-light w-100">
+          <i class="bi bi-file-earmark-pdf me-1"></i> Exportar PDF
+        </button>
       </div>
       
       <div class="card-body">
@@ -120,6 +123,9 @@
 </template>
 
 <script>
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+
 export default {
   name: 'ConsultaCandidatos',
   data() {
@@ -228,6 +234,68 @@ export default {
         idiomaId: '',
         capacitacionId: ''
       };
+    },
+    exportarPDF() {
+      // Crear nuevo documento PDF
+      const doc = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      // Título del reporte
+      const title = "Reporte de Candidatos";
+      const date = new Date().toLocaleDateString();
+      doc.setFontSize(16);
+      doc.text(title, 15, 15);
+      doc.setFontSize(10);
+      doc.text(`Generado: ${date}`, 15, 22);
+
+      // Preparar datos para la tabla
+      const tableData = this.candidatos.map(candidato => {
+        return [
+          candidato.cedula,
+          candidato.nombre,
+          candidato.puestoNombre,
+          candidato.departamento,
+          this.formatSalario(candidato.salarioAspirado),
+          candidato.competencias.map(c => c.descripcion).join(', '),
+          candidato.idiomas.map(i => i.nombre).join(', ')
+        ];
+      });
+
+      // Encabezados de la tabla
+      const headers = [
+        'Cédula',
+        'Nombre',
+        'Puesto',
+        'Departamento',
+        'Salario Aspirado',
+        'Competencias',
+        'Idiomas'
+      ];
+
+      // Crear tabla con autotable
+      autoTable(doc, {
+        head: [headers],
+        body: tableData,
+        startY: 30,
+        styles: {
+          fontSize: 10,
+          cellPadding: 2
+        },
+        headStyles: {
+          fillColor: [41, 128, 185],
+          textColor: 255,
+          fontStyle: 'bold'
+        },
+        alternateRowStyles: {
+          fillColor: [240, 240, 240]
+        }
+      });
+
+      // Guardar PDF
+      doc.save('reporte-candidatos.pdf');
     }
   }
 }

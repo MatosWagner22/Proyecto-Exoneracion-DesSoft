@@ -1,29 +1,47 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router';
 import HomeView from '@/views/HomeView.vue';
+import ReporteUsoView from '@/views/ReporteUsoView.vue';
+import TasaCambioView from '@/views/TasaCambioView.vue';
+import InflacionView from '@/views/InflacionView.vue';
+import SaludFinancieraView from '@/views/SaludFinancieraView.vue';
+import HistorialCrediticioView from '@/views/HistorialCrediticioView.vue';
+
 const routes = [
     {
         path: '/',
-        name: 'Home',
-        component: HomeView // Componente que se mostrará en la página principal
+        name: 'home',
+        component: HomeView
     },
-    { path: '/competencias', component: () => import('../views/CompetenciasView.vue') },
-    { path: '/idiomas', component: () => import('../views/IdiomasView.vue') },
-    { path: '/capacitaciones', component: () => import('../views/CapacitacionesView.vue') },
-    { path: '/puestos', component: () => import('../views/PuestosView.vue') },
-    { path: '/candidatos', component: () => import('../views/CandidatosView.vue') },
-    { path: '/empleados', component: () => import('../views/EmpleadosView.vue') },
-    { path: '/experiencia-laboral', component: () => import('../views/ExperienciaLaboralView.vue') }
+    {
+        path: '/reporte-uso',
+        name: 'reporte-uso',
+        component: ReporteUsoView
+    },
+    {
+        path: '/tasa-cambio',
+        name: 'tasa-cambio',
+        component: TasaCambioView
+    },
+    {
+        path: '/inflacion',
+        name: 'inflacion',
+        component: InflacionView
+    },
+    {
+        path: '/salud-financiera',
+        name: 'salud-financiera',
+        component: SaludFinancieraView
+    },
+    {
+        path: '/historial-crediticio',
+        name: 'historial-crediticio',
+        component: HistorialCrediticioView
+    }
 ];
 
 const router = createRouter({
-    history: createWebHistory(process.env.BASE_URL),
+    history: createWebHistory(),
     routes
-})
+});
 
-// Opcional: Cambiar título de página dinámicamente
-router.beforeEach((to, from, next) => {
-    document.title = to.meta.title || 'Sistema de Recursos Humanos'
-    next()
-})
-
-export default router
+export default router;
